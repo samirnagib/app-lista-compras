@@ -17,6 +17,7 @@ export interface ShoppingList {
   budget: number;
   createdAt: string;
   updatedAt: string;
+  supermarketId?: string; // ID do supermercado selecionado
 }
 
 export interface SupermarketPrice {
@@ -25,4 +26,17 @@ export interface SupermarketPrice {
   productId: string;
   price: number;
   lastUpdated: string;
+}
+
+export interface Supermarket {
+  id: string;
+  name: string;
+  address: string;
+  distance: number;
+  latitude: number;
+  longitude: number;
+}
+
+export interface ProductWithPrices extends Product {
+  prices?: Map<string, number>; // supermarketId -> price
 }

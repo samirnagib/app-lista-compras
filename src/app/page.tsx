@@ -1,18 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Save, List, Plus, Trash2 } from 'lucide-react';
-import { Product, ShoppingList } from '@/lib/types';
+import { ShoppingCart, Save, List, Plus, Trash2, Store, Grid3x3 } from 'lucide-react';
+import { Product, ShoppingList, Supermarket } from '@/lib/types';
 import { storage } from '@/lib/storage';
 import { AddProductForm } from '@/components/custom/AddProductForm';
 import { ProductItem } from '@/components/custom/ProductItem';
 import { BudgetControl } from '@/components/custom/BudgetControl';
+import { SupermarketComparison } from '@/components/custom/SupermarketComparison';
+import { ProductsBySection } from '@/components/custom/ProductsBySection';
 
 export default function Home() {
   const [currentList, setCurrentList] = useState<ShoppingList | null>(null);
   const [savedLists, setSavedLists] = useState<ShoppingList[]>([]);
   const [showSavedLists, setShowSavedLists] = useState(false);
   const [listName, setListName] = useState('');
+  const [showComparison, setShowComparison] = useState(false);
+  const [selectedSupermarket, setSelectedSupermarket] = useState<Supermarket | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'sections'>('list');
 
   // Carregar listas salvas ao montar
   useEffect(() => {
@@ -47,6 +52,8 @@ export default function Home() {
     setCurrentList(newList);
     setListName(newList.name);
     storage.setCurrentListId(newList.id);
+    setSelectedSupermarket(null);
+    setViewMode('list');
   };
 
   const handleAddProduct = (productData: Omit<Product, 'id' | 'checked'>) => {
@@ -120,6 +127,8 @@ export default function Home() {
     setListName(list.name);
     storage.setCurrentListId(list.id);
     setShowSavedLists(false);
+    setSelectedSupermarket(null);
+    setViewMode('list');
   };
 
   const handleDeleteList = (id: string) => {
@@ -146,6 +155,11 @@ export default function Home() {
     storage.saveList(newList);
     setSavedLists(storage.getAllLists());
     handleLoadList(newList);
+  };
+
+  const handleSelectSupermarket = (supermarket: Supermarket) => {
+    setSelectedSupermarket(supermarket);
+    setViewMode('sections');
   };
 
   const totalAmount = currentList?.products.reduce((sum, p) => sum + (p.quantity * p.unitPrice), 0) || 0;
@@ -181,6 +195,26 @@ export default function Home() {
               </div>
             </div>
             <div className="flex gap-2">
+              {currentList.products.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setShowComparison(true)}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    title="Comparar preços"
+                  >
+                    <Store className="w-6 h-6" />
+                  </button>
+                  {selectedSupermarket && (
+                    <button
+                      onClick={() => setViewMode(viewMode === 'list' ? 'sections' : 'list')}
+                      className="p-2 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                      title={viewMode === 'list' ? 'Ver por seções' : 'Ver lista'}
+                    >
+                      <Grid3x3 className="w-6 h-6" />
+                    </button>
+                  )}
+                </>
+              )}
               <button
                 onClick={() => setShowSavedLists(!showSavedLists)}
                 className="p-2 text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
@@ -289,6 +323,11 @@ export default function Home() {
                 Adicione produtos usando o formulário acima.
               </p>
             </div>
+          ) : viewMode === 'sections' && selectedSupermarket ? (
+            <ProductsBySection 
+              products={currentList.products}
+              supermarketName={selectedSupermarket.name}
+            />
           ) : (
             <div className="space-y-3">
               {currentList.products.map(product => (
@@ -303,6 +342,14 @@ export default function Home() {
           )}
         </div>
       </main>
+
+      {/* Modal de Comparação */}
+      <SupermarketComparison
+        isOpen={showComparison}
+        onClose={() => setShowComparison(false)}
+        products={currentList.products}
+        onSelectSupermarket={handleSelectSupermarket}
+      />
     </div>
   );
 }
